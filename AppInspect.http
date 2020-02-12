@@ -1,0 +1,66 @@
+@filename = my_app.tar.gz
+
+### Step 1. Authenticate with Splunk and get a token for subsequent requests
+# @name Authenticate
+GET https://api.splunk.com/2.0/rest/login/splunk HTTP/1.1
+Authorization: Basic {{$dotenv user}} {{$dotenv pass}}
+Cache-Control: no-cache
+
+### 
+@token = {{Authenticate.response.body.$.data.token}}
+
+### Step 2
+# Select appropriate tags documented at the following URL
+# https://dev.splunk.com/enterprise/docs/releaseapps/appinspect/appinspectreferencetopics/appinspecttagreference/
+# @name Submit
+POST https://appinspect.splunk.com/v1/app/validate
+Authorization: Bearer {{token}}
+Cache-Control: no-Cache-Control
+max-messages: all
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="included_tags"
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="included_tags"
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="excluded_tags"
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="excluded_tags"
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="app_package"; filename="{{filename}}"
+Content-Type: application/octet-stream
+
+< {{filename}}
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+###
+@request_id = {{Submit.response.body.$.request_id}}
+
+# Step 3. Status check
+GET https://appinspect.splunk.com/v1/app/validate/status/{{request_id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+# Step 4a. Summary
+GET https://appinspect.splunk.com/v1/app/report/{{request_id}}/summary
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+# Step 4b. Report - HTML
+GET https://appinspect.splunk.com/v1/app/report/{{request_id}}
+Authorization: Bearer {{token}}
+Content-Type: text/html
+
+###
+# Step 4c. Report - JSON
+GET https://appinspect.splunk.com/v1/app/report/{{request_id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
